@@ -704,7 +704,7 @@
       out.connect(ctx.destination);
       // 木の胴鳴り：基音＋わずかに非整数倍の倍音で「木」らしい澄んだ響き
       // 毎回ピッチを少しゆらして単調さを防ぐ
-      const base = 520 + Math.random() * 60;
+      const base = 700 + Math.random() * 70;
       [[base, 0.6, 0.13], [base * 2.76, 0.18, 0.08], [base * 5.4, 0.07, 0.05]].forEach(([f, peak, dur]) => {
         const osc = ctx.createOscillator();
         osc.type = "sine"; osc.frequency.value = f;
