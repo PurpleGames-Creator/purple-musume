@@ -407,7 +407,6 @@
       <div class="best-line" id="res-best">自己ベスト：--</div>
 
       <button class="primary-btn" id="btn-again">▶ もう一度</button>
-      <button class="ghost-btn" id="btn-share">結果をシェア</button>
       <button class="ghost-btn" id="btn-home">← トップへもどる</button>
 
       <div class="rank-box">
@@ -835,17 +834,6 @@
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
     }
-    function shareResult() {
-      const txt = `「箱入り娘 パプ子」【${DIFFS[currentDiff].name}】をクリア！⏱${fmt(elapsed)} / ${moves}手 🟣 #PurpleGames`;
-      if (navigator.share) {
-        navigator.share({ text: txt, url: location.href }).catch(() => {});
-      } else {
-        navigator.clipboard?.writeText(txt + " " + location.href).then(
-          () => toast("結果をコピーしました"),
-          () => toast(txt)
-        );
-      }
-    }
 
     /* ---------- events ---------- */
     document.getElementById("btn-start").addEventListener("click", startGame);
@@ -855,7 +843,6 @@
       document.getElementById("win-overlay").classList.add("hidden");
       resetGame();
     });
-    document.getElementById("btn-share").addEventListener("click", shareResult);
     document.getElementById("btn-home").addEventListener("click", () => {
       document.getElementById("win-overlay").classList.add("hidden");
       resetGame(); // solvedを解除し現モードの盤面を再構築
