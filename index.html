@@ -57,16 +57,15 @@
     /* difficulty selector (start card) */
     .diff-row { display: flex; gap: 8px; }
     .diff-btn {
-      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
-      padding: 10px 4px; cursor: pointer;
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+      padding: 14px 4px; cursor: pointer;
       border-radius: 13px; border: 1px solid rgba(168,130,255,0.3);
       background: rgba(13,7,30,0.5); color: #cbb9f5;
       transition: transform 0.08s ease, border-color 0.15s ease, background 0.15s ease;
     }
     .diff-btn:active { transform: scale(0.96); }
-    .diff-btn .d-star { font-size: 12px; color: #8d77c4; letter-spacing: 1px; }
-    .diff-btn .d-name { font-size: 14px; font-weight: 800; color: #e7dcff; }
-    .diff-btn .d-note { font-size: 9.5px; color: #9d8ccf; }
+    .diff-btn .d-star { font-size: 13px; color: #8d77c4; letter-spacing: 1.5px; }
+    .diff-btn .d-name { font-size: 15px; font-weight: 800; color: #e7dcff; }
     .diff-btn.active {
       border-color: #a855f7;
       background: linear-gradient(160deg, rgba(124,58,237,0.42), rgba(76,29,149,0.42));
@@ -74,7 +73,6 @@
     }
     .diff-btn.active .d-star { color: #ffd86b; }
     .diff-btn.active .d-name { color: #fff; }
-    .diff-btn.active .d-note { color: #d9caff; }
 
     /* ---------- HUD ---------- */
     .hud {
@@ -370,13 +368,13 @@
       <div class="label-s">むずかしさ</div>
       <div class="diff-row" id="diff-row">
         <button class="diff-btn" data-diff="easy">
-          <span class="d-star">★☆☆</span><span class="d-name">かんたん</span><span class="d-note">1×1だけ</span>
+          <span class="d-star">★☆☆</span><span class="d-name">かんたん</span>
         </button>
         <button class="diff-btn active" data-diff="normal">
-          <span class="d-star">★★☆</span><span class="d-name">ふつう</span><span class="d-note">縦4本入り</span>
+          <span class="d-star">★★☆</span><span class="d-name">ふつう</span>
         </button>
         <button class="diff-btn" data-diff="hard">
-          <span class="d-star">★★★</span><span class="d-name">むずかしい</span><span class="d-note">古典・本格</span>
+          <span class="d-star">★★★</span><span class="d-name">むずかしい</span>
         </button>
       </div>
 
