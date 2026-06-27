@@ -58,10 +58,16 @@
     .diff-row { display: flex; gap: 8px; margin-top: 8px; }
     /* トップ画面のマスコット（パプ太郎＋頭にリボン） */
     .mascot { text-align: center; margin: 8px 0 6px; }
-    .mascot-wrap { position: relative; display: inline-block; }
+    .mascot-wrap { position: relative; display: inline-block; animation: mascotBob 2.8s ease-in-out infinite; }
     .mascot-img { display: block; width: clamp(116px, 33vw, 152px); height: auto; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.45)); }
     .mascot-ribbon { position: absolute; top: -1%; left: 50%; transform: translateX(-50%); width: 40%; height: auto;
+      transform-origin: 50% 75%; animation: ribbonSway 2.4s ease-in-out infinite;
       filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35)); }
+    @keyframes mascotBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    @keyframes ribbonSway { 0%,100% { transform: translateX(-50%) rotate(-7deg); } 50% { transform: translateX(-50%) rotate(7deg); } }
+    @media (prefers-reduced-motion: reduce) {
+      .mascot-wrap, .mascot-ribbon, .musume-bow { animation: none !important; }
+    }
     .diff-btn {
       flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
       padding: 14px 4px; cursor: pointer;
@@ -96,6 +102,7 @@
     .chip .k { font-size: 10px; color: #b9a7e8; letter-spacing: 0.5px; }
     .chip .v { font-size: 17px; font-weight: 800; color: #f4f0ff; font-variant-numeric: tabular-nums; min-width: 30px; text-align: right; }
     .chip .v.time { color: #ffe08a; min-width: 52px; }
+    .chip .v.best { color: #7dff9b; min-width: 52px; }
     .icon-btn {
       border: 1px solid rgba(168,130,255,0.4); color: #e7dcff;
       background: linear-gradient(160deg, rgba(60,34,118,0.9), rgba(30,16,64,0.92));
@@ -258,6 +265,41 @@
       from { box-shadow: inset 0 3px 2px rgba(255,250,236,0.65), 0 0 0 2px rgba(255,210,90,0.6), 0 0 18px rgba(255,200,80,0.5), 0 6px 10px rgba(0,0,0,0.45); }
       to   { box-shadow: inset 0 3px 2px rgba(255,250,236,0.65), 0 0 0 3px rgba(255,230,140,0.95), 0 0 36px rgba(255,215,110,0.85), 0 6px 10px rgba(0,0,0,0.45); }
     }
+    /* 脱出時：ぴょこっと跳ねてから玄関の外へスライド（機能3） */
+    .piece.musume.exiting { animation: musumeExit 1.5s cubic-bezier(.4,0,.5,1) forwards; }
+    @keyframes musumeExit {
+      0%   { transform: translate(calc(1 * var(--cell)), calc(3 * var(--cell))); }
+      16%  { transform: translate(calc(1 * var(--cell)), calc(2.7 * var(--cell))) scale(1.05); }
+      30%  { transform: translate(calc(1 * var(--cell)), calc(3 * var(--cell))); }
+      100% { transform: translate(calc(1 * var(--cell)), calc(6.8 * var(--cell))); }
+    }
+    /* 娘の頭の🎀（脱出中に揺れる・機能3） */
+    .musume-bow {
+      position: absolute; left: 50%; top: -16%; transform: translateX(-50%);
+      font-size: calc(var(--cell) * 0.52); line-height: 1; pointer-events: none; z-index: 3;
+      transform-origin: 50% 100%; animation: bowSway 0.5s ease-in-out infinite;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+    }
+    @keyframes bowSway { 0%,100% { transform: translateX(-50%) rotate(-12deg); } 50% { transform: translateX(-50%) rotate(12deg); } }
+    /* 家族・友達のお見送り吹き出し（機能15） */
+    .speech {
+      position: absolute; left: 50%; transform: translateX(-50%) scale(0); transform-origin: 50% 100%;
+      background: #fffdf7; color: #3a2a14; font-weight: 700; font-size: calc(var(--cell) * 0.2); line-height: 1.15;
+      white-space: nowrap; padding: 4px 8px; border-radius: 10px; border: 1px solid rgba(120,80,30,0.3);
+      box-shadow: 0 3px 8px rgba(0,0,0,0.35); z-index: 35; pointer-events: none;
+      animation: speechPop 0.3s cubic-bezier(.2,1.4,.4,1) forwards;
+    }
+    .speech.up { bottom: 102%; }
+    .speech.down { top: 102%; transform-origin: 50% 0%; }
+    .speech::after { content: ""; position: absolute; left: 50%; transform: translateX(-50%); border: 5px solid transparent; }
+    .speech.up::after { top: 100%; border-top-color: #fffdf7; }
+    .speech.down::after { bottom: 100%; border-bottom-color: #fffdf7; }
+    @keyframes speechPop { to { transform: translateX(-50%) scale(1); } }
+    /* 紙吹雪（機能2） */
+    .confetti-layer { position: fixed; inset: 0; pointer-events: none; z-index: 70; overflow: hidden; }
+    .confetti { position: absolute; top: -12vh; border-radius: 2px; opacity: 0.95;
+      animation-name: confettiFall; animation-timing-function: ease-in; animation-fill-mode: forwards; }
+    @keyframes confettiFall { to { transform: translate(var(--drift), 120vh) rotate(var(--rot)); opacity: 0.85; } }
 
     /* ---------- Overlays ---------- */
     .overlay {
@@ -346,6 +388,7 @@
 
     <div class="hud">
       <div class="chip"><span class="k">TIME</span><span class="v time" id="hud-time">00:00</span></div>
+      <div class="chip"><span class="k">BEST</span><span class="v best" id="hud-best">--</span></div>
       <div class="chip"><span class="k">手数</span><span class="v" id="hud-moves">0</span></div>
       <button class="icon-btn" id="btn-undo" disabled>↩ 1手戻る</button>
       <button class="icon-btn" id="btn-reset">⟲ 最初から</button>
@@ -763,6 +806,7 @@
             startTimer();
             positionPiece(p);
             playClack();
+            if (navigator.vibrate) navigator.vibrate(8);
             checkWin();
             return;
           }
@@ -782,16 +826,39 @@
       solved = true;
       stopTimer();
       playWin();
+      if (navigator.vibrate) navigator.vibrate([12, 40, 18]);
       const finalMs = elapsed;
-      pieceEls["musume"].classList.add("win-glow");
-      // 娘を開口部から枠の外へスライドさせて脱出させる
+      const mEl = pieceEls["musume"];
+      mEl.classList.add("win-glow");
+      // パプ子の頭に🎀を付けて揺らす
+      const bow = document.createElement("div");
+      bow.className = "musume-bow"; bow.textContent = "🎀";
+      mEl.appendChild(bow);
+      // 家族・友達がひとことお見送り（機能15）
+      showFarewell();
+      // 娘を開口部から「ぴょこっ」と跳ねてから枠の外へスライド脱出（機能3）
       setTimeout(() => {
-        const el = pieceEls["musume"];
-        el.style.zIndex = "40";
-        el.style.transition = "transform 0.7s cubic-bezier(.5,0,.7,.4)";
-        el.style.transform = `translate(calc(1 * var(--cell)), calc(6.6 * var(--cell)))`;
+        mEl.style.zIndex = "40";
+        mEl.classList.add("exiting");
       }, 350);
-      setTimeout(() => showWin(finalMs, moves), 1150);
+      setTimeout(() => showWin(finalMs, moves), 2000);
+    }
+    /* 家族・友達のお見送りセリフ（機能15） */
+    const FAREWELL = { "母親": "いってらっしゃい", "父親": "がんばれよ！", "祖父": "立派になって…", "祖母": "気をつけてね", "兄弟": "やったな！" };
+    function showFarewell() {
+      let friendDone = false;
+      for (const p of pieces) {
+        if (p.id === "musume") continue;
+        let msg = FAREWELL[p.label];
+        if (!msg && p.label === "友達") { if (friendDone) continue; friendDone = true; msg = "またね！"; }
+        if (!msg) continue;
+        const el = pieceEls[p.id]; if (!el) continue;
+        const b = document.createElement("div");
+        b.className = "speech " + (p.row === 0 ? "down" : "up");
+        b.textContent = msg;
+        el.appendChild(b);
+        setTimeout(() => b.remove(), 2200);
+      }
     }
 
     /* ---------- best (local) ---------- */
@@ -805,6 +872,51 @@
     function saveBest(ms, mv) {
       try { localStorage.setItem(bestKey(), JSON.stringify({ ms, moves: mv })); } catch (e) {}
     }
+    // 自己ベストをHUDに常時表示（機能1）
+    function updateBestHud() {
+      const el = document.getElementById("hud-best");
+      if (!el) return;
+      const b = loadBest();
+      el.textContent = b ? fmt(b.ms) : "--";
+    }
+    // 自己ベスト更新時のキラキラSE（機能2）
+    function playRecord() {
+      const ctx = getAudio();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const out = ctx.createGain(); out.gain.value = 0.35; out.connect(ctx.destination);
+      [1046.5, 1318.5, 1568.0, 2093.0].forEach((f, i) => {
+        const t = now + i * 0.07;
+        const osc = ctx.createOscillator(); osc.type = "sine"; osc.frequency.value = f;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.5, t + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
+        osc.connect(g); g.connect(out); osc.start(t); osc.stop(t + 0.45);
+      });
+    }
+    // 紙吹雪（機能2）
+    function burstConfetti() {
+      const colors = ["#ff7eb6", "#ffd86b", "#a855f7", "#7dff9b", "#7ec8ff", "#ffffff"];
+      const layer = document.createElement("div");
+      layer.className = "confetti-layer";
+      document.body.appendChild(layer);
+      for (let i = 0; i < 90; i++) {
+        const c = document.createElement("i");
+        c.className = "confetti";
+        const size = 6 + Math.random() * 7;
+        c.style.left = (Math.random() * 100) + "vw";
+        c.style.width = size + "px";
+        c.style.height = (size * 0.6) + "px";
+        c.style.background = colors[i % colors.length];
+        c.style.animationDelay = (Math.random() * 0.3) + "s";
+        c.style.animationDuration = (1.8 + Math.random() * 1.4) + "s";
+        c.style.setProperty("--rot", (Math.random() * 720 - 360) + "deg");
+        c.style.setProperty("--drift", (Math.random() * 120 - 60) + "px");
+        layer.appendChild(c);
+      }
+      setTimeout(() => layer.remove(), 3600);
+    }
 
     /* ---------- result overlay ---------- */
     function showWin(ms, mv) {
@@ -816,9 +928,15 @@
       let isNew = false;
       if (!prev || ms < prev.ms) { saveBest(ms, mv); isNew = true; }
       const best = loadBest();
+      updateBestHud();
       const bestEl = document.getElementById("res-best");
-      if (isNew) bestEl.innerHTML = '<span class="new-best">🏅 自己ベスト更新！</span>';
-      else bestEl.textContent = "自己ベスト：" + fmt(best.ms) + " / " + best.moves + "手";
+      if (isNew) {
+        bestEl.innerHTML = '<span class="new-best">🏅 自己ベスト更新！</span>';
+        burstConfetti();
+        playRecord();
+      } else {
+        bestEl.textContent = "自己ベスト：" + fmt(best.ms) + " / " + best.moves + "手";
+      }
 
       submitScore(ms, mv);
       document.getElementById("win-overlay").classList.remove("hidden");
@@ -896,6 +1014,7 @@
       moves = 0; history = []; started = false; solved = false; elapsed = 0;
       document.getElementById("hud-time").textContent = "00:00";
       setMoves(0);
+      updateBestHud();
       document.getElementById("btn-undo").disabled = true;
       buildBoard();
       computeCell();
@@ -917,6 +1036,7 @@
       try { localStorage.setItem("purple_musume_diff", diff); } catch (e) {}
       document.querySelectorAll(".diff-btn").forEach(b => b.classList.toggle("active", b.dataset.diff === diff));
       updateModePill();
+      updateBestHud();
       // スタート画面では盤面プレビューとランキングを選択モードに合わせて更新
       if (!solved) { pieces = initialPieces(); buildBoard(); computeCell(); requestAnimationFrame(computeCell); }
       loadRanking("start-rank");
@@ -966,6 +1086,7 @@
       if (DIFFS[savedDiff]) currentDiff = savedDiff;
       document.querySelectorAll(".diff-btn").forEach(b => b.classList.toggle("active", b.dataset.diff === currentDiff));
       updateModePill();
+      updateBestHud();
       pieces = initialPieces();
       buildBoard();
       computeCell();
