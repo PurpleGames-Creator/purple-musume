@@ -844,22 +844,19 @@
       }, 350);
       setTimeout(() => showWin(finalMs, moves), 2000);
     }
-    /* 家族・友達のお見送りセリフ（機能15） */
-    const FAREWELL = { "母親": "いってらっしゃい", "父親": "がんばれよ！", "祖父": "立派になって…", "祖母": "気をつけてね", "兄弟": "やったな！" };
+    /* お見送りセリフ：父親だけがひとこと（機能15） */
     function showFarewell() {
-      let friendDone = false;
-      for (const p of pieces) {
-        if (p.id === "musume") continue;
-        let msg = FAREWELL[p.label];
-        if (!msg && p.label === "友達") { if (friendDone) continue; friendDone = true; msg = "またね！"; }
-        if (!msg) continue;
-        const el = pieceEls[p.id]; if (!el) continue;
-        const b = document.createElement("div");
-        b.className = "speech " + (p.row === 0 ? "down" : "up");
-        b.textContent = msg;
-        el.appendChild(b);
-        setTimeout(() => b.remove(), 2200);
-      }
+      const p = pieces.find(x => x.label === "父親");
+      if (!p) return;
+      const el = pieceEls[p.id]; if (!el) return;
+      // 吹き出しが他パーツに隠れないよう、父親パーツを最前面へ
+      const prevZ = el.style.zIndex;
+      el.style.zIndex = "45";
+      const b = document.createElement("div");
+      b.className = "speech " + (p.row === 0 ? "down" : "up");
+      b.textContent = "カゼひくなよ";
+      el.appendChild(b);
+      setTimeout(() => { b.remove(); el.style.zIndex = prevZ; }, 2200);
     }
 
     /* ---------- best (local) ---------- */
