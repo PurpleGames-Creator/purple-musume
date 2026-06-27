@@ -615,6 +615,73 @@
       document.getElementById("btn-undo").disabled = history.length === 0;
     }
 
+    /* ---------- sound (Web Audio で合成。外部ファイル不要) ---------- */
+    let audioCtx = null;
+    function getAudio() {
+      if (audioCtx === null) {
+        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        catch (e) { audioCtx = false; }
+      }
+      if (audioCtx && audioCtx.state === "suspended") { audioCtx.resume().catch(() => {}); }
+      return audioCtx || null;
+    }
+    // パーツ移動時の「カタ」：木のブロックがぶつかる短く心地よい音
+    function playClack() {
+      const ctx = getAudio();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const out = ctx.createGain();
+      out.gain.value = 0.55;
+      out.connect(ctx.destination);
+      // 木の胴鳴り（少し音程を毎回ゆらして単調さを防ぐ）
+      const base = 300 + Math.random() * 50;
+      [[base, 0.6], [base * 2.05, 0.22]].forEach(([f, peak]) => {
+        const osc = ctx.createOscillator();
+        osc.type = "triangle"; osc.frequency.value = f;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(peak, now + 0.004);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+        osc.connect(g); g.connect(out);
+        osc.start(now); osc.stop(now + 0.1);
+      });
+      // 当たりの「カッ」というアタック（バンドパスした短いノイズ）
+      const dur = 0.045;
+      const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2);
+      const noise = ctx.createBufferSource(); noise.buffer = buf;
+      const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 2200; bp.Q.value = 0.9;
+      const ng = ctx.createGain(); ng.gain.value = 0.4;
+      noise.connect(bp); bp.connect(ng); ng.connect(out);
+      noise.start(now); noise.stop(now + dur);
+    }
+    // クリア時：明るい上昇アルペジオ＋締めの和音（お任せ）
+    function playWin() {
+      const ctx = getAudio();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const out = ctx.createGain();
+      out.gain.value = 0.4;
+      out.connect(ctx.destination);
+      const tone = (f, t, dur, peak) => {
+        const osc = ctx.createOscillator(); osc.type = "triangle"; osc.frequency.value = f;
+        const osc2 = ctx.createOscillator(); osc2.type = "sine"; osc2.frequency.value = f * 2;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(peak, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        const g2 = ctx.createGain(); g2.gain.value = 0.3;
+        osc.connect(g); osc2.connect(g2); g2.connect(g); g.connect(out);
+        osc.start(t); osc.stop(t + dur + 0.05);
+        osc2.start(t); osc2.stop(t + dur + 0.05);
+      };
+      // ド・ミ・ソ・ド（C5→C6）の軽やかなアルペジオ
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, now + i * 0.11, 0.5, 0.5));
+      // 締めにキラッとした和音
+      [1046.5, 1318.5, 1568.0].forEach(f => tone(f, now + 0.5, 0.9, 0.32));
+    }
+
     /* ---------- drag handling (pointer events) ---------- */
     function cellPx() { return parseFloat(getComputedStyle(frame).getPropertyValue("--cell")); }
 
@@ -624,6 +691,7 @@
 
       el.addEventListener("pointerdown", (e) => {
         if (solved) return;
+        getAudio(); // ユーザー操作のタイミングでオーディオを起動/再開
         active = true; axis = null; pointerId = e.pointerId;
         startX = e.clientX; startY = e.clientY;
         cell = cellPx();
@@ -668,6 +736,7 @@
             setMoves(moves + 1);
             startTimer();
             positionPiece(p);
+            playClack();
             checkWin();
             return;
           }
@@ -686,6 +755,7 @@
     function onWin() {
       solved = true;
       stopTimer();
+      playWin();
       const finalMs = elapsed;
       pieceEls["musume"].classList.add("win-glow");
       // 娘を開口部から枠の外へスライドさせて脱出させる
