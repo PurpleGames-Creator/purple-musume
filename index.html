@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>🟣 箱入り娘 パプ子 🟣</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      background: #0b0617;
+      color: #f4f0ff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+      overflow: hidden;
+      user-select: none; -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    .app {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+      padding: calc(env(safe-area-inset-top) + 8px) env(safe-area-inset-right) calc(env(safe-area-inset-bottom) + 8px) env(safe-area-inset-left);
+      background: radial-gradient(circle at 50% 0%, #2a1856 0%, #140a2e 55%, #0b0617 100%);
+    }
+
+    /* ---------- Header ---------- */
+    .topbar {
+      width: 100%; max-width: 460px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; padding: 2px 10px 6px;
+    }
+    .home-logo-link { display: inline-flex; align-items: center; border-radius: 12px; text-decoration: none; flex-shrink: 0; }
+    .home-logo-image { display: block; width: clamp(46px, 13vw, 62px); height: auto; filter: drop-shadow(0 0 6px rgba(168,130,255,0.4)); }
+    .title {
+      font-size: clamp(16px, 5.2vw, 23px); font-weight: 800; letter-spacing: 0.5px; white-space: nowrap; text-align: center; flex: 1;
+      background: linear-gradient(90deg, #c4a0ff, #f0e6ff, #a855f7);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      text-shadow: 0 0 24px rgba(168,130,255,0.4);
+    }
+    .topbar .spacer { width: clamp(46px, 13vw, 62px); flex-shrink: 0; }
+
+    /* ---------- HUD ---------- */
+    .hud {
+      width: 100%; max-width: 460px;
+      display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
+      padding: 2px 10px 8px;
+    }
+    .chip {
+      display: flex; align-items: center; gap: 6px;
+      background: linear-gradient(160deg, rgba(46,26,92,0.9), rgba(24,13,51,0.92));
+      border: 1px solid rgba(168,130,255,0.35);
+      border-radius: 12px; padding: 7px 12px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.07);
+    }
+    .chip .k { font-size: 10px; color: #b9a7e8; letter-spacing: 0.5px; }
+    .chip .v { font-size: 17px; font-weight: 800; color: #f4f0ff; font-variant-numeric: tabular-nums; min-width: 30px; text-align: right; }
+    .chip .v.time { color: #ffe08a; min-width: 78px; }
+    .icon-btn {
+      border: 1px solid rgba(168,130,255,0.4); color: #e7dcff;
+      background: linear-gradient(160deg, rgba(60,34,118,0.9), rgba(30,16,64,0.92));
+      border-radius: 12px; padding: 7px 11px; font-size: 12.5px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+      transition: transform 0.08s ease, filter 0.15s ease;
+    }
+    .icon-btn:active { transform: scale(0.95); filter: brightness(1.15); }
+    .icon-btn:disabled { opacity: 0.4; cursor: default; }
+
+    /* ---------- Board / wooden tray ---------- */
+    .stage {
+      flex: 1; width: 100%; max-width: 460px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 0; overflow: hidden;
+    }
+    .frame {
+      --cols: 4; --rows: 5;
+      --cell: 64px; /* 初期フォールバック。実際の値はJSが親(stage)の実寸から算出 */
+      --frame: calc(var(--cell) * 0.42);
+      position: relative;
+      padding: var(--frame) var(--frame) calc(var(--frame) * 1.7);
+      border-radius: 14px;
+      background:
+        repeating-linear-gradient(91deg, rgba(90,55,20,0.16) 0 2px, rgba(90,55,20,0) 2px 9px),
+        linear-gradient(150deg, #b98a52 0%, #9d6f3c 50%, #7d5328 100%);
+      box-shadow:
+        inset 0 2px 1px rgba(255,238,205,0.5),
+        inset 0 -6px 10px rgba(45,25,8,0.6),
+        0 18px 40px rgba(0,0,0,0.55),
+        0 4px 10px rgba(0,0,0,0.4);
+      border: 1px solid rgba(60,36,14,0.7);
+    }
+    .board {
+      position: relative;
+      width: calc(var(--cols) * var(--cell));
+      height: calc(var(--rows) * var(--cell));
+      border-radius: 6px;
+      background:
+        repeating-linear-gradient(90deg, rgba(40,24,8,0.25) 0 1px, rgba(0,0,0,0) 1px 6px),
+        linear-gradient(160deg, #5a3c1c, #3f2a12);
+      box-shadow:
+        inset 0 6px 12px rgba(0,0,0,0.65),
+        inset 0 -2px 4px rgba(0,0,0,0.5),
+        inset 0 0 0 2px rgba(30,18,6,0.6);
+      touch-action: none;
+    }
+    /* exit slot at the bottom-center (2 cells wide) */
+    .exit {
+      position: absolute;
+      left: calc(1 * var(--cell)); top: calc(5 * var(--cell));
+      width: calc(2 * var(--cell)); height: calc(var(--frame) * 1.7);
+      transform: translateY(0);
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    .exit::before {
+      content: ""; position: absolute; left: 4px; right: 4px; top: -6px; height: 12px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0));
+      border-radius: 0 0 8px 8px;
+    }
+    .exit-label {
+      font-family: "Yu Mincho", "Hiragino Mincho ProN", "MS Mincho", serif;
+      font-size: calc(var(--cell) * 0.21); font-weight: 800; letter-spacing: 2px;
+      color: #3a2710; text-shadow: 0 1px 0 rgba(255,238,205,0.55), 0 -1px 1px rgba(0,0,0,0.35);
+      white-space: nowrap;
+    }
+
+    /* ---------- Pieces (3D wooden blocks) ---------- */
+    .piece {
+      --col: 0; --row: 0; --w: 1; --h: 1;
+      position: absolute; left: 0; top: 0;
+      width: calc(var(--w) * var(--cell)); height: calc(var(--h) * var(--cell));
+      transform: translate(calc(var(--col) * var(--cell)), calc(var(--row) * var(--cell)));
+      transition: transform 0.13s cubic-bezier(.2,.7,.3,1);
+      padding: 3px;
+      cursor: grab; touch-action: none; z-index: 1;
+      will-change: transform;
+    }
+    .piece.dragging { transition: none; z-index: 30; cursor: grabbing; }
+    .piece-inner {
+      position: relative; width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 7px;
+      --wood1: #e6c592; --wood2: #d2a868; --wood3: #b3854c;
+      background-image:
+        repeating-linear-gradient(93deg, rgba(110,72,32,0.13) 0 2px, rgba(110,72,32,0) 2px 8px),
+        repeating-linear-gradient(87deg, rgba(255,236,200,0.10) 0 1px, rgba(0,0,0,0) 1px 6px),
+        linear-gradient(158deg, var(--wood1), var(--wood2) 55%, var(--wood3));
+      border: 1px solid rgba(82,52,22,0.55);
+      box-shadow:
+        inset 0 3px 2px rgba(255,248,232,0.6),
+        inset 3px 0 3px rgba(255,248,232,0.32),
+        inset 0 -6px 9px rgba(74,42,16,0.5),
+        inset -5px 0 9px rgba(74,42,16,0.32),
+        0 5px 8px rgba(0,0,0,0.45),
+        0 2px 3px rgba(0,0,0,0.35);
+    }
+    .piece.dragging .piece-inner {
+      box-shadow:
+        inset 0 3px 2px rgba(255,248,232,0.6),
+        inset 3px 0 3px rgba(255,248,232,0.32),
+        inset 0 -6px 9px rgba(74,42,16,0.5),
+        inset -5px 0 9px rgba(74,42,16,0.32),
+        0 14px 22px rgba(0,0,0,0.55),
+        0 6px 10px rgba(0,0,0,0.4);
+    }
+    .label {
+      font-family: "Yu Mincho", "Hiragino Mincho ProN", "MS Mincho", serif;
+      color: #36230f; font-weight: 700; line-height: 1.0;
+      text-shadow: 0 1px 0 rgba(255,246,228,0.55), 0 -1px 1px rgba(0,0,0,0.22);
+      pointer-events: none;
+    }
+    /* vertical text for tall / small pieces */
+    .piece.tall .label, .piece.small .label, .piece.musume .label {
+      writing-mode: vertical-rl; text-orientation: upright;
+    }
+    .piece.wide .label { writing-mode: horizontal-tb; letter-spacing: 1px; }
+    .piece.tall .label { font-size: calc(var(--cell) * 0.5); letter-spacing: 1px; }
+    .piece.small .label { font-size: calc(var(--cell) * 0.46); }
+    .piece.wide .label { font-size: calc(var(--cell) * 0.52); }
+    .piece.musume .label { font-size: calc(var(--cell) * 1.0); letter-spacing: 0; }
+
+    /* the daughter (goal piece) — warmer, redder kanji, golden edge */
+    .piece.musume .piece-inner {
+      --wood1: #f0d3a4; --wood2: #e2b277; --wood3: #c8945a;
+      border-color: rgba(150,90,30,0.7);
+      box-shadow:
+        inset 0 3px 2px rgba(255,250,236,0.65),
+        inset 3px 0 3px rgba(255,250,236,0.35),
+        inset 0 -7px 10px rgba(90,52,18,0.5),
+        inset -6px 0 10px rgba(90,52,18,0.32),
+        0 0 0 2px rgba(210,160,70,0.45),
+        0 6px 10px rgba(0,0,0,0.45),
+        0 2px 3px rgba(0,0,0,0.35);
+    }
+    .piece.musume .label { color: #8c1f12; text-shadow: 0 1px 0 rgba(255,240,220,0.55), 0 -1px 1px rgba(0,0,0,0.3); }
+    .piece.musume.win-glow .piece-inner { animation: winglow 0.9s ease-in-out infinite alternate; }
+    @keyframes winglow {
+      from { box-shadow: inset 0 3px 2px rgba(255,250,236,0.65), 0 0 0 2px rgba(255,210,90,0.6), 0 0 18px rgba(255,200,80,0.5), 0 6px 10px rgba(0,0,0,0.45); }
+      to   { box-shadow: inset 0 3px 2px rgba(255,250,236,0.65), 0 0 0 3px rgba(255,230,140,0.95), 0 0 36px rgba(255,215,110,0.85), 0 6px 10px rgba(0,0,0,0.45); }
+    }
+
+    /* ---------- Overlays ---------- */
+    .overlay {
+      position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+      padding: 16px; z-index: 50; background: rgba(8,4,20,0.55); backdrop-filter: blur(2px);
+    }
+    .overlay.hidden { display: none; }
+    .card {
+      width: min(92vw, 360px); max-height: 92vh; overflow-y: auto;
+      background: linear-gradient(160deg, rgba(46,26,92,0.97), rgba(24,13,51,0.98));
+      border: 1px solid rgba(168,130,255,0.35); border-radius: 20px;
+      padding: 22px 18px 18px; text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+      -webkit-overflow-scrolling: touch;
+    }
+    .card .c-logo { width: clamp(64px, 18vw, 92px); height: auto; margin-bottom: 8px; filter: drop-shadow(0 0 6px rgba(168,130,255,0.4)); }
+    .card .c-title {
+      font-size: clamp(19px, 6.5vw, 26px); font-weight: 800; white-space: nowrap; margin-bottom: 4px;
+      background: linear-gradient(90deg, #c4a0ff, #f0e6ff, #a855f7);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .subtitle { font-size: 12px; color: #b9a7e8; margin-bottom: 14px; letter-spacing: 0.5px; }
+    .label-s { font-size: 12px; color: #cbb9f5; margin: 12px 0 6px; }
+    .nick-input {
+      width: 100%; padding: 11px 12px; font-size: 15px; border-radius: 12px;
+      border: 1px solid rgba(168,130,255,0.4); background: rgba(13,7,30,0.8); color: #fff; text-align: center; outline: none;
+    }
+    .nick-input:focus { border-color: #a855f7; box-shadow: 0 0 0 3px rgba(168,130,255,0.25); }
+    .primary-btn {
+      width: 100%; margin-top: 14px; padding: 14px; font-size: 17px; font-weight: 700; color: #fff;
+      border: none; border-radius: 14px; cursor: pointer;
+      background: linear-gradient(135deg, #9333ea, #6d28d9);
+      box-shadow: 0 8px 20px rgba(124,58,237,0.45), inset 0 1px 0 rgba(255,255,255,0.2);
+      transition: transform 0.08s ease, filter 0.15s ease;
+    }
+    .primary-btn:active { transform: scale(0.97); filter: brightness(1.1); }
+    .ghost-btn {
+      width: 100%; margin-top: 10px; padding: 12px; font-size: 14px; font-weight: 700; color: #d9caff;
+      border: 1px solid rgba(168,130,255,0.4); border-radius: 14px; cursor: pointer; background: rgba(13,7,30,0.4);
+    }
+    .ghost-btn:active { filter: brightness(1.2); }
+    .how { margin-top: 14px; font-size: 11.5px; line-height: 1.7; color: #c8b9ef; background: rgba(13,7,30,0.45); border-radius: 12px; padding: 10px 12px; text-align: left; }
+    .how b { color: #f0c674; }
+
+    .result-row { display: flex; gap: 10px; margin: 6px 0 4px; }
+    .result-box { flex: 1; background: rgba(13,7,30,0.5); border: 1px solid rgba(168,130,255,0.25); border-radius: 12px; padding: 10px 8px; }
+    .result-box .rk { font-size: 11px; color: #b9a7e8; }
+    .result-box .rv { font-size: 22px; font-weight: 800; color: #ffe08a; font-variant-numeric: tabular-nums; }
+    .best-line { font-size: 12.5px; color: #cbb9f5; margin: 8px 0 2px; }
+    .new-best { color: #7dff9b; font-weight: 800; }
+
+    /* ranking */
+    .rank-box { margin-top: 14px; }
+    .rank-head { font-size: 14px; font-weight: 700; color: #e7dcff; margin-bottom: 8px; }
+    .rank-list { display: flex; flex-direction: column; gap: 5px; }
+    .rank-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; background: rgba(13,7,30,0.45); border-radius: 9px; padding: 7px 10px; }
+    .rank-item.me { border: 1px solid rgba(168,130,255,0.6); background: rgba(60,34,118,0.4); }
+    .rank-rank { width: 24px; font-weight: 800; color: #c4a0ff; text-align: center; }
+    .rank-name { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #efe7ff; }
+    .rank-time { font-variant-numeric: tabular-nums; color: #ffe08a; font-weight: 700; }
+    .rank-moves { font-size: 10.5px; color: #9d8ccf; width: 42px; text-align: right; }
+    .rank-empty { font-size: 12px; color: #9d8ccf; padding: 8px; }
+
+    .toast {
+      position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 14px); transform: translateX(-50%);
+      background: rgba(20,10,44,0.95); color: #efe7ff; border: 1px solid rgba(168,130,255,0.4);
+      padding: 9px 16px; border-radius: 12px; font-size: 12.5px; z-index: 60; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      opacity: 0; transition: opacity 0.25s ease; pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <a class="home-logo-link" href="https://purple-park.vercel.app/" aria-label="Purple Park へ移動">
+        <img src="logo.png" alt="Purple Park ロゴ" class="home-logo-image" draggable="false" />
+      </a>
+      <div class="title">箱入り娘 パプ子</div>
+      <div class="spacer"></div>
+    </div>
+
+    <div class="hud">
+      <div class="chip"><span class="k">TIME</span><span class="v time" id="hud-time">00:00.0</span></div>
+      <div class="chip"><span class="k">手数</span><span class="v" id="hud-moves">0</span></div>
+      <button class="icon-btn" id="btn-undo" disabled>↩ 1手戻る</button>
+      <button class="icon-btn" id="btn-reset">⟲ 最初から</button>
+    </div>
+
+    <div class="stage">
+      <div class="frame" id="frame">
+        <div class="board" id="board"></div>
+        <div class="exit"><span class="exit-label">出口・EXIT</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Start overlay -->
+  <div class="overlay" id="start-overlay">
+    <div class="card">
+      <img src="logo.png" alt="" class="c-logo" draggable="false" />
+      <div class="c-title">箱入り娘 パプ子</div>
+      <div class="subtitle">木のスライドパズル｜娘を出口へ脱出させよう</div>
+
+      <div class="label-s">ニックネーム</div>
+      <input class="nick-input" id="nick-input" maxlength="12" placeholder="ななしさん" />
+      <button class="primary-btn" id="btn-start">▶ はじめる</button>
+
+      <div class="how">
+        <b>遊び方</b><br>
+        ・木のパーツをスワイプ／ドラッグして動かします。<br>
+        ・<b>娘（むすめ）</b>を下中央の <b>出口・EXIT</b> まで運べばクリア！<br>
+        ・空いているマスにしか動かせません。<br>
+        ・<b>タイム</b>と<b>手数</b>を競います。最少手数・最速タイムを目指そう。
+      </div>
+
+      <div class="rank-box">
+        <div class="rank-head">🏆 タイムランキング TOP3</div>
+        <div class="rank-list" id="start-rank"><div class="rank-empty">読み込み中…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Win overlay -->
+  <div class="overlay hidden" id="win-overlay">
+    <div class="card">
+      <img src="logo.png" alt="" class="c-logo" draggable="false" />
+      <div class="c-title">🎉 脱出成功！</div>
+      <div class="subtitle">娘パプ子は無事に箱から出られました</div>
+
+      <div class="result-row">
+        <div class="result-box"><div class="rk">クリアタイム</div><div class="rv" id="res-time">00:00.0</div></div>
+        <div class="result-box"><div class="rk">手数</div><div class="rv" id="res-moves">0</div></div>
+      </div>
+      <div class="best-line" id="res-best">自己ベスト：--</div>
+
+      <button class="primary-btn" id="btn-again">▶ もう一度</button>
+      <button class="ghost-btn" id="btn-share">結果をシェア</button>
+
+      <div class="rank-box">
+        <div class="rank-head">🏆 タイムランキング</div>
+        <div class="rank-list" id="win-rank"><div class="rank-empty">読み込み中…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    /* ============================ Config ============================ */
+    const SUPABASE_URL = "https://hefayilffszrczxhnpii.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlZmF5aWxmZnN6cmN6eGhucGlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5NDI5NDEsImV4cCI6MjA4NzUxODk0MX0.qUsuQOIZzdlFLXtR-i1d9TX5c3P9QKPdhv34QGt4V_k";
+    const RANKING_TABLE = "musume_scores"; // columns: nickname(text), clear_ms(int8), moves(int4), created_at
+
+    let supa = null;
+    function getClient() {
+      if (!supa && window.supabase) {
+        try { supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch (e) { supa = null; }
+      }
+      return supa;
+    }
+
+    /* ============================ Board model ============================ */
+    const COLS = 4, ROWS = 5;
+    // initial classic "Daughter in the box" layout
+    function initialPieces() {
+      return [
+        { id: "musume", label: "娘",  kind: "musume", col: 1, row: 0, w: 2, h: 2 },
+        { id: "haha",   label: "母親", kind: "tall",   col: 0, row: 0, w: 1, h: 2 },
+        { id: "chichi", label: "父親", kind: "tall",   col: 3, row: 0, w: 1, h: 2 },
+        { id: "genan",  label: "下男", kind: "tall",   col: 0, row: 2, w: 1, h: 2 },
+        { id: "banto",  label: "番頭", kind: "wide",   col: 1, row: 2, w: 2, h: 1 },
+        { id: "gejo",   label: "下女", kind: "tall",   col: 3, row: 2, w: 1, h: 2 },
+        { id: "kozo1",  label: "小僧", kind: "small",  col: 1, row: 3, w: 1, h: 1 },
+        { id: "kozo2",  label: "小僧", kind: "small",  col: 2, row: 3, w: 1, h: 1 },
+        { id: "kozo3",  label: "小僧", kind: "small",  col: 0, row: 4, w: 1, h: 1 },
+        { id: "kozo4",  label: "小僧", kind: "small",  col: 3, row: 4, w: 1, h: 1 },
+      ];
+    }
+
+    let pieces = [];
+    let pieceEls = {};
+    let moves = 0;
+    let history = [];        // stack of {id, col, row}
+    let started = false;     // timer running
+    let solved = false;
+    let startTime = 0, elapsed = 0, rafId = null;
+    let playerName = "";
+
+    const board = document.getElementById("board");
+    const frame = document.getElementById("frame");
+
+    /* ---------- occupancy & collision ---------- */
+    function occupancySet(excludeId) {
+      const occ = new Set();
+      for (const p of pieces) {
+        if (p.id === excludeId) continue;
+        for (let dx = 0; dx < p.w; dx++)
+          for (let dy = 0; dy < p.h; dy++)
+            occ.add((p.col + dx) + "," + (p.row + dy));
+      }
+      return occ;
+    }
+    function canPlace(p, nc, nr, occ) {
+      if (nc < 0 || nr < 0 || nc + p.w > COLS || nr + p.h > ROWS) return false;
+      for (let dx = 0; dx < p.w; dx++)
+        for (let dy = 0; dy < p.h; dy++)
+          if (occ.has((nc + dx) + "," + (nr + dy))) return false;
+      return true;
+    }
+    function freeSteps(p, dCol, dRow, occ) {
+      let steps = 0;
+      while (canPlace(p, p.col + (steps + 1) * dCol, p.row + (steps + 1) * dRow, occ)) steps++;
+      return steps;
+    }
+
+    /* ---------- layout / render ---------- */
+    function buildBoard() {
+      board.innerHTML = "";
+      pieceEls = {};
+      for (const p of pieces) {
+        const el = document.createElement("div");
+        el.className = "piece " + p.kind;
+        el.dataset.id = p.id;
+        el.style.setProperty("--w", p.w);
+        el.style.setProperty("--h", p.h);
+        const inner = document.createElement("div");
+        inner.className = "piece-inner";
+        const lab = document.createElement("div");
+        lab.className = "label";
+        lab.textContent = p.label;
+        inner.appendChild(lab);
+        el.appendChild(inner);
+        board.appendChild(el);
+        pieceEls[p.id] = el;
+        attachDrag(el, p);
+        positionPiece(p);
+      }
+    }
+    function positionPiece(p) {
+      const el = pieceEls[p.id];
+      el.style.setProperty("--col", p.col);
+      el.style.setProperty("--row", p.row);
+      el.style.transform = `translate(calc(${p.col} * var(--cell)), calc(${p.row} * var(--cell)))`;
+    }
+
+    /* セルサイズは親(stage)の実寸から算出。stageはoverflow:hiddenなので
+       盤面がはみ出しても寸法が膨らまず、フィードバックループが起きない。 */
+    function computeCell() {
+      const stage = document.querySelector(".stage");
+      if (!stage) return;
+      const availW = stage.clientWidth - 6;
+      const availH = stage.clientHeight - 6;
+      if (availW <= 0 || availH <= 0) return;
+      const cellW = availW / (COLS + 0.84);          // 横: 盤4 + 枠0.84
+      const cellH = availH / (ROWS + 0.42 * 2.7);    // 縦: 盤5 + 枠(上0.42 + 下0.714)
+      let cell = Math.min(cellW, cellH);
+      cell = Math.max(34, Math.min(cell, 96));
+      frame.style.setProperty("--cell", cell.toFixed(2) + "px");
+    }
+
+    /* ---------- timer ---------- */
+    function fmt(ms) {
+      const t = Math.max(0, ms);
+      const m = Math.floor(t / 60000);
+      const s = Math.floor((t % 60000) / 1000);
+      const d = Math.floor((t % 1000) / 100);
+      return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0") + "." + d;
+    }
+    function tick() {
+      elapsed = performance.now() - startTime;
+      document.getElementById("hud-time").textContent = fmt(elapsed);
+      rafId = requestAnimationFrame(tick);
+    }
+    function startTimer() {
+      if (started) return;
+      started = true;
+      startTime = performance.now();
+      tick();
+    }
+    function stopTimer() {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+
+    /* ---------- moves / undo ---------- */
+    function setMoves(n) { moves = n; document.getElementById("hud-moves").textContent = n; }
+    function pushHistory(p) {
+      history.push({ id: p.id, col: p.col, row: p.row });
+      document.getElementById("btn-undo").disabled = history.length === 0;
+    }
+    function undo() {
+      if (!history.length || solved) return;
+      const last = history.pop();
+      const p = pieces.find(x => x.id === last.id);
+      p.col = last.col; p.row = last.row;
+      positionPiece(p);
+      setMoves(Math.max(0, moves - 1)); // 直前の1手を取り消し（手数も戻す）
+      document.getElementById("btn-undo").disabled = history.length === 0;
+    }
+
+    /* ---------- drag handling (pointer events) ---------- */
+    function cellPx() { return parseFloat(getComputedStyle(frame).getPropertyValue("--cell")); }
+
+    function attachDrag(el, p) {
+      let active = false, axis = null, startX = 0, startY = 0;
+      let maxNeg = 0, maxPos = 0, cell = 0, pointerId = null;
+
+      el.addEventListener("pointerdown", (e) => {
+        if (solved) return;
+        active = true; axis = null; pointerId = e.pointerId;
+        startX = e.clientX; startY = e.clientY;
+        cell = cellPx();
+        try { el.setPointerCapture(pointerId); } catch (_) {}
+        el.classList.add("dragging");
+      });
+
+      el.addEventListener("pointermove", (e) => {
+        if (!active) return;
+        let dx = e.clientX - startX;
+        let dy = e.clientY - startY;
+
+        if (!axis) {
+          if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+          axis = Math.abs(dx) >= Math.abs(dy) ? "x" : "y";
+          const occ = occupancySet(p.id);
+          if (axis === "x") { maxPos = freeSteps(p, 1, 0, occ); maxNeg = freeSteps(p, -1, 0, occ); }
+          else { maxPos = freeSteps(p, 0, 1, occ); maxNeg = freeSteps(p, 0, -1, occ); }
+        }
+
+        let off = axis === "x" ? dx : dy;
+        off = Math.max(-maxNeg * cell, Math.min(maxPos * cell, off));
+        const tx = axis === "x" ? (p.col * cell + off) : (p.col * cell);
+        const ty = axis === "y" ? (p.row * cell + off) : (p.row * cell);
+        el.style.transform = `translate(${tx}px, ${ty}px)`;
+      });
+
+      function endDrag(e) {
+        if (!active) return;
+        active = false;
+        el.classList.remove("dragging");
+        try { el.releasePointerCapture(pointerId); } catch (_) {}
+
+        if (axis) {
+          const dx = e.clientX - startX, dy = e.clientY - startY;
+          let off = axis === "x" ? dx : dy;
+          off = Math.max(-maxNeg * cell, Math.min(maxPos * cell, off));
+          const stepsMoved = Math.round(off / cell);
+          if (stepsMoved !== 0) {
+            pushHistory(p);
+            if (axis === "x") p.col += stepsMoved; else p.row += stepsMoved;
+            setMoves(moves + 1);
+            startTimer();
+            positionPiece(p);
+            checkWin();
+            return;
+          }
+        }
+        positionPiece(p); // snap back
+      }
+      el.addEventListener("pointerup", endDrag);
+      el.addEventListener("pointercancel", endDrag);
+    }
+
+    /* ---------- win ---------- */
+    function checkWin() {
+      const m = pieces.find(x => x.id === "musume");
+      if (m.col === 1 && m.row === 3) onWin();
+    }
+    function onWin() {
+      solved = true;
+      stopTimer();
+      const finalMs = elapsed;
+      pieceEls["musume"].classList.add("win-glow");
+      // slide the daughter fully out through the exit for a beat
+      setTimeout(() => {
+        const m = pieces.find(x => x.id === "musume");
+        pieceEls["musume"].style.transition = "transform 0.6s ease-in";
+        pieceEls["musume"].style.transform = `translate(calc(1 * var(--cell)), calc(5.4 * var(--cell)))`;
+      }, 350);
+      setTimeout(() => showWin(finalMs, moves), 1050);
+    }
+
+    /* ---------- best (local) ---------- */
+    function bestKey() { return "purple_musume_best_" + ((playerName || "").trim() || "_"); }
+    function loadBest() {
+      try {
+        const raw = localStorage.getItem(bestKey());
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) { return null; }
+    }
+    function saveBest(ms, mv) {
+      try { localStorage.setItem(bestKey(), JSON.stringify({ ms, moves: mv })); } catch (e) {}
+    }
+
+    /* ---------- result overlay ---------- */
+    function showWin(ms, mv) {
+      document.getElementById("res-time").textContent = fmt(ms);
+      document.getElementById("res-moves").textContent = mv;
+
+      const prev = loadBest();
+      let isNew = false;
+      if (!prev || ms < prev.ms) { saveBest(ms, mv); isNew = true; }
+      const best = loadBest();
+      const bestEl = document.getElementById("res-best");
+      if (isNew) bestEl.innerHTML = '<span class="new-best">🏅 自己ベスト更新！</span>';
+      else bestEl.textContent = "自己ベスト：" + fmt(best.ms) + " / " + best.moves + "手";
+
+      submitScore(ms, mv);
+      document.getElementById("win-overlay").classList.remove("hidden");
+      loadRanking("win-rank");
+    }
+
+    /* ---------- Supabase ranking ---------- */
+    async function submitScore(ms, mv) {
+      const client = getClient();
+      if (!client) return;
+      try {
+        await client.from(RANKING_TABLE).insert({
+          nickname: (playerName || "").trim() || "ななしさん",
+          clear_ms: Math.round(ms),
+          moves: mv,
+        });
+      } catch (e) { /* table may not exist yet — fail silently */ }
+    }
+    async function loadRanking(targetId) {
+      const el = document.getElementById(targetId);
+      const client = getClient();
+      if (!client) { el.innerHTML = '<div class="rank-empty">ランキングは利用できません</div>'; return; }
+      try {
+        const { data, error } = await client
+          .from(RANKING_TABLE)
+          .select("nickname, clear_ms, moves")
+          .order("clear_ms", { ascending: true })
+          .limit(20);
+        if (error || !data) throw error || new Error("no data");
+        const me = (playerName || "").trim();
+        const top = data.slice(0, targetId === "start-rank" ? 3 : 5);
+        if (!top.length) { el.innerHTML = '<div class="rank-empty">まだ記録がありません。一番乗りを狙おう！</div>'; return; }
+        el.innerHTML = top.map((r, i) => {
+          const mine = me && r.nickname === me;
+          return `<div class="rank-item ${mine ? "me" : ""}">
+            <div class="rank-rank">${i + 1}</div>
+            <div class="rank-name">${escapeHtml(r.nickname)}</div>
+            <div class="rank-time">${fmt(r.clear_ms)}</div>
+            <div class="rank-moves">${r.moves}手</div>
+          </div>`;
+        }).join("");
+      } catch (e) {
+        el.innerHTML = '<div class="rank-empty">ランキング準備中</div>';
+      }
+    }
+    function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+    /* ---------- game control ---------- */
+    function resetGame() {
+      stopTimer();
+      pieces = initialPieces();
+      moves = 0; history = []; started = false; solved = false; elapsed = 0;
+      document.getElementById("hud-time").textContent = "00:00.0";
+      setMoves(0);
+      document.getElementById("btn-undo").disabled = true;
+      buildBoard();
+      computeCell();
+      requestAnimationFrame(computeCell);
+    }
+    function startGame() {
+      playerName = (document.getElementById("nick-input").value || "").trim();
+      try { localStorage.setItem("purple_musume_nick", playerName); } catch (e) {}
+      document.getElementById("start-overlay").classList.add("hidden");
+      resetGame();
+    }
+
+    /* ---------- toast / share ---------- */
+    let toastTimer = null;
+    function toast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg; t.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
+    }
+    function shareResult() {
+      const txt = `「箱入り娘 パプ子」をクリア！⏱${fmt(elapsed)} / ${moves}手 🟣 #PurpleGames`;
+      if (navigator.share) {
+        navigator.share({ text: txt, url: location.href }).catch(() => {});
+      } else {
+        navigator.clipboard?.writeText(txt + " " + location.href).then(
+          () => toast("結果をコピーしました"),
+          () => toast(txt)
+        );
+      }
+    }
+
+    /* ---------- events ---------- */
+    document.getElementById("btn-start").addEventListener("click", startGame);
+    document.getElementById("btn-reset").addEventListener("click", () => { if (!solved) resetGame(); else resetGame(); });
+    document.getElementById("btn-undo").addEventListener("click", undo);
+    document.getElementById("btn-again").addEventListener("click", () => {
+      document.getElementById("win-overlay").classList.add("hidden");
+      resetGame();
+    });
+    document.getElementById("btn-share").addEventListener("click", shareResult);
+    document.getElementById("nick-input").addEventListener("keydown", (e) => { if (e.key === "Enter") startGame(); });
+
+    window.addEventListener("resize", () => { computeCell(); for (const p of pieces) positionPiece(p); });
+    window.addEventListener("orientationchange", () => setTimeout(() => { computeCell(); for (const p of pieces) positionPiece(p); }, 200));
+
+    /* ---------- boot ---------- */
+    (function boot() {
+      const savedNick = (() => { try { return localStorage.getItem("purple_musume_nick") || ""; } catch (e) { return ""; } })();
+      document.getElementById("nick-input").value = savedNick;
+      playerName = savedNick;
+      pieces = initialPieces();
+      buildBoard();
+      computeCell();
+      requestAnimationFrame(() => { computeCell(); for (const p of pieces) positionPiece(p); });
+      loadRanking("start-rank");
+    })();
+  </script>
+</body>
+</html>
