@@ -694,34 +694,35 @@
       if (audioCtx && audioCtx.state === "suspended") { audioCtx.resume().catch(() => {}); }
       return audioCtx || null;
     }
-    // パーツ移動時の「カタ」：木のブロックがぶつかる短く心地よい音
+    // パーツ移動時の音：木のけん玉のような「コン」という丸くクリアな木の打音
     function playClack() {
       const ctx = getAudio();
       if (!ctx) return;
       const now = ctx.currentTime;
       const out = ctx.createGain();
-      out.gain.value = 0.55;
+      out.gain.value = 0.5;
       out.connect(ctx.destination);
-      // 木の胴鳴り（少し音程を毎回ゆらして単調さを防ぐ）
-      const base = 300 + Math.random() * 50;
-      [[base, 0.6], [base * 2.05, 0.22]].forEach(([f, peak]) => {
+      // 木の胴鳴り：基音＋わずかに非整数倍の倍音で「木」らしい澄んだ響き
+      // 毎回ピッチを少しゆらして単調さを防ぐ
+      const base = 520 + Math.random() * 60;
+      [[base, 0.6, 0.13], [base * 2.76, 0.18, 0.08], [base * 5.4, 0.07, 0.05]].forEach(([f, peak, dur]) => {
         const osc = ctx.createOscillator();
-        osc.type = "triangle"; osc.frequency.value = f;
+        osc.type = "sine"; osc.frequency.value = f;
         const g = ctx.createGain();
         g.gain.setValueAtTime(0.0001, now);
-        g.gain.exponentialRampToValueAtTime(peak, now + 0.004);
-        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+        g.gain.exponentialRampToValueAtTime(peak, now + 0.002);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
         osc.connect(g); g.connect(out);
-        osc.start(now); osc.stop(now + 0.1);
+        osc.start(now); osc.stop(now + dur + 0.02);
       });
-      // 当たりの「カッ」というアタック（バンドパスした短いノイズ）
-      const dur = 0.045;
+      // ごく短い木の当たり（カッ）：控えめなノイズでアタックだけ補強
+      const dur = 0.02;
       const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate);
       const d = buf.getChannelData(0);
-      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3);
       const noise = ctx.createBufferSource(); noise.buffer = buf;
-      const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 2200; bp.Q.value = 0.9;
-      const ng = ctx.createGain(); ng.gain.value = 0.4;
+      const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 1600; bp.Q.value = 1.2;
+      const ng = ctx.createGain(); ng.gain.value = 0.12;
       noise.connect(bp); bp.connect(ng); ng.connect(out);
       noise.start(now); noise.stop(now + dur);
     }
