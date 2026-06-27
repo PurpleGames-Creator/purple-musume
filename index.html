@@ -169,14 +169,21 @@
       pointer-events: none;
     }
     /* vertical text for tall / small pieces */
-    .piece.tall .label, .piece.small .label, .piece.musume .label {
+    .piece.tall .label, .piece.small .label {
       writing-mode: vertical-rl; text-orientation: upright;
     }
     .piece.wide .label { writing-mode: horizontal-tb; letter-spacing: 1px; }
     .piece.tall .label { font-size: calc(var(--cell) * 0.5); letter-spacing: 1px; }
-    .piece.small .label { font-size: calc(var(--cell) * 0.46); }
+    .piece.small .label { font-size: calc(var(--cell) * 0.44); }
     .piece.wide .label { font-size: calc(var(--cell) * 0.52); }
-    .piece.musume .label { font-size: calc(var(--cell) * 1.0); letter-spacing: 0; }
+    /* daughter piece: 娘 (large) + （パプ子）(small) stacked horizontally */
+    .piece.musume .label {
+      writing-mode: horizontal-tb;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      line-height: 1; letter-spacing: 0;
+    }
+    .piece.musume .m-main { font-size: calc(var(--cell) * 0.8); }
+    .piece.musume .m-sub { font-size: calc(var(--cell) * 0.26); margin-top: calc(var(--cell) * 0.1); letter-spacing: 0.5px; }
 
     /* the daughter (goal piece) — warmer, redder kanji, golden edge */
     .piece.musume .piece-inner {
@@ -364,16 +371,16 @@
     // initial classic "Daughter in the box" layout
     function initialPieces() {
       return [
-        { id: "musume", label: "娘",  kind: "musume", col: 1, row: 0, w: 2, h: 2 },
+        { id: "musume", label: "娘", sub: "（パプ子）", kind: "musume", col: 1, row: 0, w: 2, h: 2 },
         { id: "haha",   label: "母親", kind: "tall",   col: 0, row: 0, w: 1, h: 2 },
         { id: "chichi", label: "父親", kind: "tall",   col: 3, row: 0, w: 1, h: 2 },
-        { id: "genan",  label: "下男", kind: "tall",   col: 0, row: 2, w: 1, h: 2 },
-        { id: "banto",  label: "番頭", kind: "wide",   col: 1, row: 2, w: 2, h: 1 },
-        { id: "gejo",   label: "下女", kind: "tall",   col: 3, row: 2, w: 1, h: 2 },
-        { id: "kozo1",  label: "小僧", kind: "small",  col: 1, row: 3, w: 1, h: 1 },
-        { id: "kozo2",  label: "小僧", kind: "small",  col: 2, row: 3, w: 1, h: 1 },
-        { id: "kozo3",  label: "小僧", kind: "small",  col: 0, row: 4, w: 1, h: 1 },
-        { id: "kozo4",  label: "小僧", kind: "small",  col: 3, row: 4, w: 1, h: 1 },
+        { id: "genan",  label: "祖父", kind: "tall",   col: 0, row: 2, w: 1, h: 2 },
+        { id: "banto",  label: "兄弟", kind: "wide",   col: 1, row: 2, w: 2, h: 1 },
+        { id: "gejo",   label: "祖母", kind: "tall",   col: 3, row: 2, w: 1, h: 2 },
+        { id: "kozo1",  label: "友達", kind: "small",  col: 1, row: 3, w: 1, h: 1 },
+        { id: "kozo2",  label: "友達", kind: "small",  col: 2, row: 3, w: 1, h: 1 },
+        { id: "kozo3",  label: "友達", kind: "small",  col: 0, row: 4, w: 1, h: 1 },
+        { id: "kozo4",  label: "友達", kind: "small",  col: 3, row: 4, w: 1, h: 1 },
       ];
     }
 
@@ -427,7 +434,15 @@
         inner.className = "piece-inner";
         const lab = document.createElement("div");
         lab.className = "label";
-        lab.textContent = p.label;
+        if (p.sub) {
+          const main = document.createElement("span");
+          main.className = "m-main"; main.textContent = p.label;
+          const sub = document.createElement("span");
+          sub.className = "m-sub"; sub.textContent = p.sub;
+          lab.appendChild(main); lab.appendChild(sub);
+        } else {
+          lab.textContent = p.label;
+        }
         inner.appendChild(lab);
         el.appendChild(inner);
         board.appendChild(el);
