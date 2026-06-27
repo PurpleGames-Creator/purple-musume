@@ -156,13 +156,6 @@
       pointer-events: none;
       z-index: 2;
     }
-    /* 開口部の上端に落ちる影で「穴が奥に抜けている」立体感を出す */
-    .exit::before {
-      content: ""; position: absolute; left: 0; right: 0; top: calc(-1 * var(--frame));
-      height: var(--frame);
-      background: linear-gradient(180deg, rgba(0,0,0,0.5), rgba(0,0,0,0));
-      pointer-events: none;
-    }
     .exit-label {
       font-family: "Yu Mincho", "Hiragino Mincho ProN", "MS Mincho", serif;
       font-size: calc(var(--cell) * 0.2); font-weight: 700; letter-spacing: 2px;
