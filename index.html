@@ -55,7 +55,10 @@
       box-shadow: 0 3px 10px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
     }
     /* difficulty selector (start card) */
-    .diff-row { display: flex; gap: 8px; margin-top: 16px; }
+    .diff-row { display: flex; gap: 8px; margin-top: 8px; }
+    /* トップ画面のマスコット（パプ子＝リボン付きパプ太郎） */
+    .mascot { display: flex; justify-content: center; margin: 8px 0 6px; }
+    .mascot svg { width: clamp(92px, 27vw, 124px); height: auto; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.45)); }
     .diff-btn {
       flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
       padding: 14px 4px; cursor: pointer;
@@ -363,6 +366,37 @@
     <div class="card">
       <img src="logo.png" alt="" class="c-logo" draggable="false" />
       <div class="c-title">箱入り娘 パプ子</div>
+
+      <div class="mascot" aria-hidden="true">
+        <svg viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="papBody" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#9b4dff"/>
+              <stop offset="1" stop-color="#6a23c8"/>
+            </linearGradient>
+          </defs>
+          <!-- 足 -->
+          <ellipse cx="74" cy="196" rx="16" ry="10" fill="#5a2ca3" stroke="#1c0f33" stroke-width="4"/>
+          <ellipse cx="126" cy="196" rx="16" ry="10" fill="#5a2ca3" stroke="#1c0f33" stroke-width="4"/>
+          <!-- 角 -->
+          <path d="M64,60 C50,40 40,30 30,27 C40,42 47,54 58,70 Z" fill="#f2e7c4" stroke="#1c0f33" stroke-width="4" stroke-linejoin="round"/>
+          <path d="M136,60 C150,40 160,30 170,27 C160,42 153,54 142,70 Z" fill="#f2e7c4" stroke="#1c0f33" stroke-width="4" stroke-linejoin="round"/>
+          <!-- 胴体 -->
+          <path d="M100,46 C150,46 172,92 172,132 C172,178 142,198 100,198 C58,198 28,178 28,132 C28,92 50,46 100,46 Z" fill="url(#papBody)" stroke="#1c0f33" stroke-width="5"/>
+          <!-- 目 -->
+          <ellipse cx="78" cy="108" rx="7.5" ry="11" fill="#1c0f33"/>
+          <ellipse cx="122" cy="108" rx="7.5" ry="11" fill="#1c0f33"/>
+          <circle cx="80.5" cy="104" r="2.4" fill="#fff"/>
+          <circle cx="124.5" cy="104" r="2.4" fill="#fff"/>
+          <!-- 鼻（スナウト＋金の鼻リング） -->
+          <ellipse cx="100" cy="145" rx="34" ry="28" fill="#d6abf2" stroke="#1c0f33" stroke-width="4"/>
+          <path d="M86,138 C80,156 88,170 100,170 C112,170 120,156 114,138" fill="none" stroke="#e8b84b" stroke-width="5.5" stroke-linecap="round"/>
+          <!-- リボン（パプ子の目印） -->
+          <path d="M100,40 C80,26 70,30 73,42 C70,53 80,55 100,40 Z" fill="#ff7eb6" stroke="#b03e74" stroke-width="3.5" stroke-linejoin="round"/>
+          <path d="M100,40 C120,26 130,30 127,42 C130,53 120,55 100,40 Z" fill="#ff7eb6" stroke="#b03e74" stroke-width="3.5" stroke-linejoin="round"/>
+          <circle cx="100" cy="41" r="6.5" fill="#ff9ec8" stroke="#b03e74" stroke-width="3.5"/>
+        </svg>
+      </div>
 
       <div class="diff-row" id="diff-row">
         <button class="diff-btn" data-diff="easy">
