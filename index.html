@@ -37,7 +37,35 @@
       -webkit-background-clip: text; background-clip: text; color: transparent;
       text-shadow: 0 0 24px rgba(168,130,255,0.4);
     }
-    .topbar .spacer { width: clamp(46px, 13vw, 62px); flex-shrink: 0; }
+    .mode-pill {
+      flex-shrink: 0; min-width: clamp(60px, 17vw, 84px); text-align: center;
+      font-size: clamp(10px, 3vw, 12.5px); font-weight: 800; color: #ffe08a;
+      padding: 6px 8px; border-radius: 999px; white-space: nowrap;
+      background: linear-gradient(160deg, rgba(60,34,118,0.9), rgba(30,16,64,0.92));
+      border: 1px solid rgba(168,130,255,0.45);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    /* difficulty selector (start card) */
+    .diff-row { display: flex; gap: 8px; }
+    .diff-btn {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+      padding: 10px 4px; cursor: pointer;
+      border-radius: 13px; border: 1px solid rgba(168,130,255,0.3);
+      background: rgba(13,7,30,0.5); color: #cbb9f5;
+      transition: transform 0.08s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+    .diff-btn:active { transform: scale(0.96); }
+    .diff-btn .d-star { font-size: 12px; color: #8d77c4; letter-spacing: 1px; }
+    .diff-btn .d-name { font-size: 14px; font-weight: 800; color: #e7dcff; }
+    .diff-btn .d-note { font-size: 9.5px; color: #9d8ccf; }
+    .diff-btn.active {
+      border-color: #a855f7;
+      background: linear-gradient(160deg, rgba(124,58,237,0.42), rgba(76,29,149,0.42));
+      box-shadow: 0 0 0 2px rgba(168,130,255,0.35), 0 6px 16px rgba(124,58,237,0.3);
+    }
+    .diff-btn.active .d-star { color: #ffd86b; }
+    .diff-btn.active .d-name { color: #fff; }
+    .diff-btn.active .d-note { color: #d9caff; }
 
     /* ---------- HUD ---------- */
     .hud {
@@ -303,7 +331,7 @@
         <img src="logo.png" alt="Purple Park ロゴ" class="home-logo-image" draggable="false" />
       </a>
       <div class="title">箱入り娘 パプ子</div>
-      <div class="spacer"></div>
+      <div class="mode-pill" id="mode-pill">★★☆ ふつう</div>
     </div>
 
     <div class="hud">
@@ -333,6 +361,19 @@
       <div class="c-title">箱入り娘 パプ子</div>
       <div class="subtitle">木のスライドパズル｜娘を出口へ脱出させよう</div>
 
+      <div class="label-s">むずかしさ</div>
+      <div class="diff-row" id="diff-row">
+        <button class="diff-btn" data-diff="easy">
+          <span class="d-star">★☆☆</span><span class="d-name">かんたん</span><span class="d-note">1×1だけ</span>
+        </button>
+        <button class="diff-btn active" data-diff="normal">
+          <span class="d-star">★★☆</span><span class="d-name">ふつう</span><span class="d-note">縦2本入り</span>
+        </button>
+        <button class="diff-btn" data-diff="hard">
+          <span class="d-star">★★★</span><span class="d-name">むずかしい</span><span class="d-note">古典・本格</span>
+        </button>
+      </div>
+
       <div class="label-s">ニックネーム</div>
       <input class="nick-input" id="nick-input" maxlength="12" placeholder="ななしさん" />
       <button class="primary-btn" id="btn-start">▶ はじめる</button>
@@ -346,7 +387,7 @@
       </div>
 
       <div class="rank-box">
-        <div class="rank-head">🏆 タイムランキング TOP3</div>
+        <div class="rank-head" id="start-rank-head">🏆 ふつう タイムランキング TOP3</div>
         <div class="rank-list" id="start-rank"><div class="rank-empty">読み込み中…</div></div>
       </div>
     </div>
@@ -357,7 +398,7 @@
     <div class="card">
       <img src="logo.png" alt="" class="c-logo" draggable="false" />
       <div class="c-title">🎉 脱出成功！</div>
-      <div class="subtitle">娘パプ子は無事に箱から出られました</div>
+      <div class="subtitle" id="win-sub">娘パプ子は無事に箱から出られました</div>
 
       <div class="result-row">
         <div class="result-box"><div class="rk">クリアタイム</div><div class="rv" id="res-time">00:00</div></div>
@@ -367,9 +408,10 @@
 
       <button class="primary-btn" id="btn-again">▶ もう一度</button>
       <button class="ghost-btn" id="btn-share">結果をシェア</button>
+      <button class="ghost-btn" id="btn-home">← むずかしさを変える</button>
 
       <div class="rank-box">
-        <div class="rank-head">🏆 タイムランキング</div>
+        <div class="rank-head" id="win-rank-head">🏆 タイムランキング</div>
         <div class="rank-list" id="win-rank"><div class="rank-empty">読み込み中…</div></div>
       </div>
     </div>
@@ -393,21 +435,57 @@
 
     /* ============================ Board model ============================ */
     const COLS = 4, ROWS = 5;
-    // initial classic "Daughter in the box" layout
-    function initialPieces() {
-      return [
-        { id: "musume", label: "娘", sub: "（パプ子）", kind: "musume", col: 1, row: 0, w: 2, h: 2 },
-        { id: "haha",   label: "母親", kind: "tall",   col: 0, row: 0, w: 1, h: 2 },
-        { id: "chichi", label: "父親", kind: "tall",   col: 3, row: 0, w: 1, h: 2 },
-        { id: "genan",  label: "祖父", kind: "tall",   col: 0, row: 2, w: 1, h: 2 },
-        { id: "banto",  label: "兄弟", kind: "wide",   col: 1, row: 2, w: 2, h: 1 },
-        { id: "gejo",   label: "祖母", kind: "tall",   col: 3, row: 2, w: 1, h: 2 },
-        { id: "kozo1",  label: "友達", kind: "small",  col: 1, row: 3, w: 1, h: 1 },
-        { id: "kozo2",  label: "友達", kind: "small",  col: 2, row: 3, w: 1, h: 1 },
-        { id: "kozo3",  label: "友達", kind: "small",  col: 0, row: 4, w: 1, h: 1 },
-        { id: "kozo4",  label: "友達", kind: "small",  col: 3, row: 4, w: 1, h: 1 },
-      ];
+    /* ===== 難易度モード =====
+       娘(2×2)固定・空きマス2つ固定。パーツの細かさだけで難易度を作る。
+       t: M=娘(2x2) / V=縦1x2 / H=横2x1 / S=1x1。座標は [col,row]。
+       （ソルバー実測の最短手数: easy≈27 / normal≈46 / hard≈116 ※1マス単位） */
+    const DIFFS = {
+      easy:   { name: "かんたん",   stars: "★☆☆" },
+      normal: { name: "ふつう",     stars: "★★☆" },
+      hard:   { name: "むずかしい", stars: "★★★" },
+    };
+    const LAYOUTS = {
+      // かんたん: 娘＋1×1だけ（14個）。空き=(1,4)(2,4)
+      easy: [
+        ["M",1,0],
+        ["S",0,0],["S",3,0],["S",0,1],["S",3,1],
+        ["S",0,2],["S",1,2],["S",2,2],["S",3,2],
+        ["S",0,3],["S",1,3],["S",2,3],["S",3,3],
+        ["S",0,4],["S",3,4],
+      ],
+      // ふつう: 娘＋縦2個(上の左右)＋1×1(10個)。空き=(1,4)(2,4)
+      normal: [
+        ["M",1,0],
+        ["V",0,0],["V",3,0],
+        ["S",0,2],["S",1,2],["S",2,2],["S",3,2],
+        ["S",0,3],["S",1,3],["S",2,3],["S",3,3],
+        ["S",0,4],["S",3,4],
+      ],
+      // むずかしい: 古典「箱入り娘」配置。空き=(1,4)(2,4)
+      hard: [
+        ["M",1,0],
+        ["V",0,0],["V",3,0],["V",0,2],["V",3,2],
+        ["H",1,2],
+        ["S",1,3],["S",2,3],["S",0,4],["S",3,4],
+      ],
+    };
+    const SHAPE = { M:{w:2,h:2}, V:{w:1,h:2}, H:{w:2,h:1}, S:{w:1,h:1} };
+    const V_NAMES = ["母親", "父親", "祖父", "祖母"]; // 縦パーツに順番で命名
+
+    let currentDiff = "normal";
+
+    function makePieces(diffKey) {
+      const layout = LAYOUTS[diffKey] || LAYOUTS.normal;
+      let vi = 0, si = 0, hi = 0;
+      return layout.map(([t, col, row], idx) => {
+        const sh = SHAPE[t];
+        if (t === "M") return { id: "musume", label: "娘", sub: "（パプ子）", kind: "musume", col, row, w: 2, h: 2 };
+        if (t === "V") return { id: "v" + (vi), label: V_NAMES[vi++ % V_NAMES.length], kind: "tall", col, row, w: sh.w, h: sh.h };
+        if (t === "H") return { id: "h" + (hi++), label: "兄弟", kind: "wide", col, row, w: sh.w, h: sh.h };
+        return { id: "s" + (si++), label: "友達", kind: "small", col, row, w: 1, h: 1 };
+      });
     }
+    function initialPieces() { return makePieces(currentDiff); }
 
     let pieces = [];
     let pieceEls = {};
@@ -622,7 +700,7 @@
     }
 
     /* ---------- best (local) ---------- */
-    function bestKey() { return "purple_musume_best_" + ((playerName || "").trim() || "_"); }
+    function bestKey() { return "purple_musume_best_" + currentDiff + "_" + ((playerName || "").trim() || "_"); }
     function loadBest() {
       try {
         const raw = localStorage.getItem(bestKey());
@@ -637,6 +715,7 @@
     function showWin(ms, mv) {
       document.getElementById("res-time").textContent = fmt(ms);
       document.getElementById("res-moves").textContent = mv;
+      document.getElementById("win-sub").textContent = "【" + DIFFS[currentDiff].name + "】クリア！娘パプ子は無事に脱出！";
 
       const prev = loadBest();
       let isNew = false;
@@ -660,17 +739,27 @@
           nickname: (playerName || "").trim() || "ななしさん",
           clear_ms: Math.round(ms),
           moves: mv,
+          mode: currentDiff,
         });
       } catch (e) { /* table may not exist yet — fail silently */ }
     }
+    function refreshRankHeads() {
+      const nm = DIFFS[currentDiff].name;
+      const sh = document.getElementById("start-rank-head");
+      const wh = document.getElementById("win-rank-head");
+      if (sh) sh.textContent = "🏆 " + nm + " タイムランキング TOP3";
+      if (wh) wh.textContent = "🏆 " + nm + " タイムランキング";
+    }
     async function loadRanking(targetId) {
       const el = document.getElementById(targetId);
+      refreshRankHeads();
       const client = getClient();
       if (!client) { el.innerHTML = '<div class="rank-empty">ランキングは利用できません</div>'; return; }
       try {
         const { data, error } = await client
           .from(RANKING_TABLE)
           .select("nickname, clear_ms, moves")
+          .eq("mode", currentDiff)
           .order("clear_ms", { ascending: true })
           .limit(20);
         if (error || !data) throw error || new Error("no data");
@@ -710,6 +799,20 @@
       document.getElementById("start-overlay").classList.add("hidden");
       resetGame();
     }
+    function updateModePill() {
+      const d = DIFFS[currentDiff];
+      document.getElementById("mode-pill").textContent = d.stars + " " + d.name;
+    }
+    function setDifficulty(diff) {
+      if (!DIFFS[diff]) return;
+      currentDiff = diff;
+      try { localStorage.setItem("purple_musume_diff", diff); } catch (e) {}
+      document.querySelectorAll(".diff-btn").forEach(b => b.classList.toggle("active", b.dataset.diff === diff));
+      updateModePill();
+      // スタート画面では盤面プレビューとランキングを選択モードに合わせて更新
+      if (!solved) { pieces = initialPieces(); buildBoard(); computeCell(); requestAnimationFrame(computeCell); }
+      loadRanking("start-rank");
+    }
 
     /* ---------- toast / share ---------- */
     let toastTimer = null;
@@ -720,7 +823,7 @@
       toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
     }
     function shareResult() {
-      const txt = `「箱入り娘 パプ子」をクリア！⏱${fmt(elapsed)} / ${moves}手 🟣 #PurpleGames`;
+      const txt = `「箱入り娘 パプ子」【${DIFFS[currentDiff].name}】をクリア！⏱${fmt(elapsed)} / ${moves}手 🟣 #PurpleGames`;
       if (navigator.share) {
         navigator.share({ text: txt, url: location.href }).catch(() => {});
       } else {
@@ -740,7 +843,14 @@
       resetGame();
     });
     document.getElementById("btn-share").addEventListener("click", shareResult);
+    document.getElementById("btn-home").addEventListener("click", () => {
+      document.getElementById("win-overlay").classList.add("hidden");
+      resetGame(); // solvedを解除し現モードの盤面を再構築
+      document.getElementById("start-overlay").classList.remove("hidden");
+      loadRanking("start-rank");
+    });
     document.getElementById("nick-input").addEventListener("keydown", (e) => { if (e.key === "Enter") startGame(); });
+    document.querySelectorAll(".diff-btn").forEach(b => b.addEventListener("click", () => setDifficulty(b.dataset.diff)));
 
     window.addEventListener("resize", () => { computeCell(); for (const p of pieces) positionPiece(p); });
     window.addEventListener("orientationchange", () => setTimeout(() => { computeCell(); for (const p of pieces) positionPiece(p); }, 200));
@@ -748,8 +858,12 @@
     /* ---------- boot ---------- */
     (function boot() {
       const savedNick = (() => { try { return localStorage.getItem("purple_musume_nick") || ""; } catch (e) { return ""; } })();
+      const savedDiff = (() => { try { return localStorage.getItem("purple_musume_diff") || ""; } catch (e) { return ""; } })();
       document.getElementById("nick-input").value = savedNick;
       playerName = savedNick;
+      if (DIFFS[savedDiff]) currentDiff = savedDiff;
+      document.querySelectorAll(".diff-btn").forEach(b => b.classList.toggle("active", b.dataset.diff === currentDiff));
+      updateModePill();
       pieces = initialPieces();
       buildBoard();
       computeCell();
