@@ -274,7 +274,7 @@
       -webkit-background-clip: text; background-clip: text; color: transparent;
     }
     .subtitle { font-size: 12px; color: #b9a7e8; margin-bottom: 14px; letter-spacing: 0.5px; }
-    .label-s { font-size: 12px; color: #cbb9f5; margin: 12px 0 6px; }
+    .label-s { font-size: 12px; color: #cbb9f5; margin: 16px 0 6px; }
     .nick-input {
       width: 100%; padding: 11px 12px; font-size: 15px; border-radius: 12px;
       border: 1px solid rgba(168,130,255,0.4); background: rgba(13,7,30,0.8); color: #fff; text-align: center; outline: none;
@@ -306,10 +306,10 @@
     /* ranking */
     .rank-box { margin-top: 14px; }
     .rank-head { font-size: 14px; font-weight: 700; color: #e7dcff; margin-bottom: 8px; }
-    .rank-list { display: flex; flex-direction: column; gap: 5px; }
+    .rank-list { display: flex; flex-direction: column; gap: 5px; max-height: 210px; overflow-y: auto; padding-right: 2px; -webkit-overflow-scrolling: touch; }
     .rank-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; background: rgba(13,7,30,0.45); border-radius: 9px; padding: 7px 10px; }
     .rank-item.me { border: 1px solid rgba(168,130,255,0.6); background: rgba(60,34,118,0.4); }
-    .rank-rank { width: 24px; font-weight: 800; color: #c4a0ff; text-align: center; }
+    .rank-rank { min-width: 34px; font-weight: 800; color: #c4a0ff; text-align: center; }
     .rank-name { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #efe7ff; }
     .rank-time { font-variant-numeric: tabular-nums; color: #ffe08a; font-weight: 700; }
     .rank-moves { font-size: 10.5px; color: #9d8ccf; width: 42px; text-align: right; }
@@ -363,7 +363,6 @@
     <div class="card">
       <img src="logo.png" alt="" class="c-logo" draggable="false" />
       <div class="c-title">箱入り娘 パプ子</div>
-      <div class="subtitle">木のスライドパズル｜娘を出口へ脱出させよう</div>
 
       <div class="label-s">むずかしさ</div>
       <div class="diff-row" id="diff-row">
@@ -389,7 +388,7 @@
       </div>
 
       <div class="rank-box">
-        <div class="rank-head" id="start-rank-head">🏆 ふつう タイムランキング TOP3</div>
+        <div class="rank-head" id="start-rank-head">🏆 ふつう タイムランキング</div>
         <div class="rank-list" id="start-rank"><div class="rank-empty">読み込み中…</div></div>
       </div>
     </div>
@@ -749,7 +748,7 @@
       const nm = DIFFS[currentDiff].name;
       const sh = document.getElementById("start-rank-head");
       const wh = document.getElementById("win-rank-head");
-      if (sh) sh.textContent = "🏆 " + nm + " タイムランキング TOP3";
+      if (sh) sh.textContent = "🏆 " + nm + " タイムランキング";
       if (wh) wh.textContent = "🏆 " + nm + " タイムランキング";
     }
     async function loadRanking(targetId) {
@@ -763,15 +762,28 @@
           .select("nickname, clear_ms, moves")
           .eq("mode", currentDiff)
           .order("clear_ms", { ascending: true })
-          .limit(20);
+          .limit(3000);
         if (error || !data) throw error || new Error("no data");
-        const me = (playerName || "").trim();
-        const top = data.slice(0, targetId === "start-rank" ? 3 : 5);
+        // プレイヤーごとにベストタイム(最速)のみ残す
+        const byName = {};
+        data.forEach(row => {
+          const n = (row.nickname || "").trim() || "ななしさん";
+          if (!(n in byName) || Number(row.clear_ms) < byName[n].clear_ms) {
+            byName[n] = { nickname: n, clear_ms: Number(row.clear_ms), moves: row.moves };
+          }
+        });
+        const uniq = Object.values(byName).sort((a, b) => a.clear_ms - b.clear_ms);
+        const top = uniq.slice(0, 100);
         if (!top.length) { el.innerHTML = '<div class="rank-empty">まだ記録がありません。一番乗りを狙おう！</div>'; return; }
+        const me = (playerName || "").trim();
+        let prev = null, dispRank = 0;
         el.innerHTML = top.map((r, i) => {
+          if (r.clear_ms !== prev) dispRank = i + 1;
+          prev = r.clear_ms;
           const mine = me && r.nickname === me;
+          const medal = dispRank === 1 ? "🥇" : dispRank === 2 ? "🥈" : dispRank === 3 ? "🥉" : (dispRank + "位");
           return `<div class="rank-item ${mine ? "me" : ""}">
-            <div class="rank-rank">${i + 1}</div>
+            <div class="rank-rank">${medal}</div>
             <div class="rank-name">${escapeHtml(r.nickname)}</div>
             <div class="rank-time">${fmt(r.clear_ms)}</div>
             <div class="rank-moves">${r.moves}手</div>
