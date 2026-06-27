@@ -478,7 +478,7 @@
       let vi = 0, si = 0, hi = 0;
       return layout.map(([t, col, row], idx) => {
         const sh = SHAPE[t];
-        if (t === "M") return { id: "musume", label: "娘", sub: "（パプ子）", kind: "musume", col, row, w: 2, h: 2 };
+        if (t === "M") return { id: "musume", label: "娘", sub: "パプ子", kind: "musume", col, row, w: 2, h: 2 };
         if (t === "V") return { id: "v" + (vi), label: V_NAMES[vi++ % V_NAMES.length], kind: "tall", col, row, w: sh.w, h: sh.h };
         if (t === "H") return { id: "h" + (hi++), label: "兄弟", kind: "wide", col, row, w: sh.w, h: sh.h };
         return { id: "s" + (si++), label: "友達", kind: "small", col, row, w: 1, h: 1 };
