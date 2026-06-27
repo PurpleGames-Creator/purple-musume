@@ -316,6 +316,9 @@
       -webkit-overflow-scrolling: touch;
     }
     .card .c-logo { width: clamp(64px, 18vw, 92px); height: auto; margin-bottom: 8px; filter: drop-shadow(0 0 6px rgba(168,130,255,0.4)); }
+    .c-logo-link { display: inline-block; line-height: 0; cursor: pointer; transition: transform 0.12s ease; -webkit-tap-highlight-color: transparent; }
+    .c-logo-link:active { transform: scale(0.94); }
+    .c-logo-link .c-logo { margin-bottom: 0; }
     .card .c-title {
       font-size: clamp(19px, 6.5vw, 26px); font-weight: 800; white-space: nowrap; margin-bottom: 4px;
       background: linear-gradient(90deg, #c4a0ff, #f0e6ff, #a855f7);
@@ -410,7 +413,9 @@
   <!-- Start overlay -->
   <div class="overlay" id="start-overlay">
     <div class="card">
-      <img src="logo.png" alt="" class="c-logo" draggable="false" />
+      <a class="c-logo-link" href="https://purple-park.vercel.app/" target="_blank" rel="noopener noreferrer" aria-label="Purple Park のホームページへ">
+        <img src="logo.png" alt="" class="c-logo" draggable="false" />
+      </a>
       <div class="c-title">箱入り娘 パプ子</div>
 
       <div class="mascot">
