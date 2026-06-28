@@ -771,9 +771,30 @@
       // 締めにキラッとした和音
       [1046.5, 1318.5, 1568.0].forEach(f => tone(f, now + 0.5, 0.9, 0.32));
     }
-    // 難易度選択音：Purple Jumper のキャラ選択と同じ効果音（HTML5 Audioプールで低遅延・重ね再生）
+    // 難易度選択音：Purple Jumper のキャラ選択と同じ効果音。
+    // ★低遅延対策：Web Audioのデコード済みバッファで即時再生する。
+    //   HTML5 <audio>.play() は再生開始に固有の遅延があり、さらにこの画面では
+    //   タップ直後に setDifficulty()（盤面の再構築＝同期DOM処理＋ランキング取得）が
+    //   メインスレッドで走るため、音の立ち上がりがそこに引きずられて遅れて聞こえていた。
+    //   Web AudioのAudioBufferSourceNode.start()はオーディオスレッドでサンプル精度に
+    //   スケジュールされるため、メインスレッドのDOM処理の影響を受けず即座に鳴る。
     const SELECT_SFX_FILE = "仕掛け作動2.mp3";
     const SELECT_SFX_VOLUME = 0.6;
+    let selectBuffer = null, selectBufferLoading = false;
+    function loadSelectBuffer() {
+      if (selectBuffer || selectBufferLoading) return;
+      selectBufferLoading = true;
+      fetch(SELECT_SFX_FILE)
+        .then(r => r.arrayBuffer())
+        .then(buf => {
+          const ctx = getAudio();
+          if (!ctx) throw new Error("no audio ctx");
+          return ctx.decodeAudioData(buf);
+        })
+        .then(decoded => { selectBuffer = decoded; })
+        .catch(() => { selectBufferLoading = false; ensureSelectSfxPool(); /* 失敗時はHTML5にフォールバック */ });
+    }
+    // フォールバック用：HTML5 Audioプール（Web Audio不可の端末向け）
     const SELECT_SFX_POOL_SIZE = 4;
     let selectSfxPool = null, selectSfxNext = 0;
     function ensureSelectSfxPool() {
@@ -788,6 +809,23 @@
       return selectSfxPool;
     }
     function playSelectSfx() {
+      const ctx = getAudio();
+      // Web Audio 優先：デコード済みバッファを即時再生（サンプル精度・低遅延）
+      if (ctx && selectBuffer) {
+        try {
+          const src = ctx.createBufferSource();
+          src.buffer = selectBuffer;
+          const g = ctx.createGain();
+          const now = ctx.currentTime;
+          // 先頭の「プツッ」を防ぐごく短いアタックランプ（Jumperでポップが出た問題への対策）
+          g.gain.setValueAtTime(0.0001, now);
+          g.gain.linearRampToValueAtTime(SELECT_SFX_VOLUME, now + 0.004);
+          src.connect(g); g.connect(ctx.destination);
+          src.start(now);
+          return;
+        } catch (_) { /* フォールバックへ */ }
+      }
+      // フォールバック：HTML5 Audioプール
       const pool = ensureSelectSfxPool();
       if (!pool.length) return;
       const i = selectSfxNext % pool.length;
@@ -1187,7 +1225,7 @@
       computeCell();
       requestAnimationFrame(() => { computeCell(); for (const p of pieces) positionPiece(p); });
       loadRanking("start-rank");
-      ensureSelectSfxPool(); // 効果音を事前ロード（初回タップを早く鳴らすため）
+      loadSelectBuffer();    // 効果音をWeb Audioへ事前デコード（即時再生のため。HTML5プールは失敗時のみ生成）
     })();
   </script>
 </body>
