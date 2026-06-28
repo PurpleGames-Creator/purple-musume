@@ -760,6 +760,52 @@
       // 締めにキラッとした和音
       [1046.5, 1318.5, 1568.0].forEach(f => tone(f, now + 0.5, 0.9, 0.32));
     }
+    // 難易度選択音：Purple Jumper のキャラ選択と同じ効果音（HTML5 Audioプールで低遅延・重ね再生）
+    const SELECT_SFX_FILE = "仕掛け作動2.mp3";
+    const SELECT_SFX_VOLUME = 0.6;
+    const SELECT_SFX_POOL_SIZE = 4;
+    let selectSfxPool = null, selectSfxNext = 0;
+    function ensureSelectSfxPool() {
+      if (selectSfxPool) return selectSfxPool;
+      selectSfxPool = [];
+      for (let i = 0; i < SELECT_SFX_POOL_SIZE; i++) {
+        const a = new Audio(SELECT_SFX_FILE);
+        a.preload = "auto"; a.playsInline = true; a.volume = SELECT_SFX_VOLUME;
+        try { a.load(); } catch (_) {}
+        selectSfxPool.push(a);
+      }
+      return selectSfxPool;
+    }
+    function playSelectSfx() {
+      const pool = ensureSelectSfxPool();
+      if (!pool.length) return;
+      const i = selectSfxNext % pool.length;
+      selectSfxNext = (i + 1) % pool.length;
+      const a = pool[i];
+      try {
+        a.muted = false; a.volume = SELECT_SFX_VOLUME; a.currentTime = 0;
+        const p = a.play(); if (p && typeof p.catch === "function") p.catch(() => {});
+      } catch (_) {}
+    }
+    // はじめる：明るく軽やかな確定音（上昇2音＋キラッ）
+    function playStartSfx() {
+      const ctx = getAudio();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const out = ctx.createGain(); out.gain.value = 0.4; out.connect(ctx.destination);
+      const tone = (f, t, dur, peak, type) => {
+        const osc = ctx.createOscillator(); osc.type = type || "triangle"; osc.frequency.value = f;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(peak, t + 0.015);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        osc.connect(g); g.connect(out);
+        osc.start(t); osc.stop(t + dur + 0.03);
+      };
+      tone(659.25, now, 0.18, 0.5);          // ミ
+      tone(987.77, now + 0.08, 0.32, 0.45);  // シ（上昇で確定感）
+      tone(1318.5, now + 0.16, 0.3, 0.18, "sine"); // キラッ
+    }
 
     /* ---------- drag handling (pointer events) ---------- */
     function cellPx() { return parseFloat(getComputedStyle(frame).getPropertyValue("--cell")); }
@@ -1028,6 +1074,7 @@
       requestAnimationFrame(computeCell);
     }
     function startGame() {
+      playStartSfx();
       playerName = (document.getElementById("nick-input").value || "").trim();
       try { localStorage.setItem("purple_musume_nick", playerName); } catch (e) {}
       document.getElementById("start-overlay").classList.add("hidden");
@@ -1079,7 +1126,7 @@
       loadRanking("start-rank");
     });
     document.getElementById("nick-input").addEventListener("keydown", (e) => { if (e.key === "Enter") startGame(); });
-    document.querySelectorAll(".diff-btn").forEach(b => b.addEventListener("click", () => setDifficulty(b.dataset.diff)));
+    document.querySelectorAll(".diff-btn").forEach(b => b.addEventListener("click", () => { playSelectSfx(); setDifficulty(b.dataset.diff); }));
 
     window.addEventListener("resize", () => { computeCell(); for (const p of pieces) positionPiece(p); });
     window.addEventListener("orientationchange", () => setTimeout(() => { computeCell(); for (const p of pieces) positionPiece(p); }, 200));
@@ -1099,6 +1146,7 @@
       computeCell();
       requestAnimationFrame(() => { computeCell(); for (const p of pieces) positionPiece(p); });
       loadRanking("start-rank");
+      ensureSelectSfxPool(); // 効果音を事前ロード（初回タップを早く鳴らすため）
     })();
   </script>
 </body>
