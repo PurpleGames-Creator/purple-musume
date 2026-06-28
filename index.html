@@ -229,9 +229,11 @@
       text-shadow: 0 1px 0 rgba(255,246,228,0.55), 0 -1px 1px rgba(0,0,0,0.22);
       pointer-events: none;
     }
-    /* vertical text for tall / small pieces */
+    /* 縦並びラベル（tall / small）：writing-mode:vertical-rl + text-orientation:upright は
+       旧iOS Safariで文字順が反転するバグ（友達→達友）があるため使わず、1文字ずつ縦に積む */
     .piece.tall .label, .piece.small .label {
-      writing-mode: vertical-rl; text-orientation: upright;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      line-height: 1.1;
     }
     .piece.wide .label { writing-mode: horizontal-tb; letter-spacing: 1px; }
     .piece.tall .label { font-size: calc(var(--cell) * 0.5); letter-spacing: 1px; }
@@ -640,6 +642,13 @@
           const sub = document.createElement("span");
           sub.className = "m-sub"; sub.textContent = p.sub;
           lab.appendChild(main); lab.appendChild(sub);
+        } else if (p.kind === "tall" || p.kind === "small") {
+          // 縦並びラベルは1文字ずつブロックで積む（旧iOS Safariの縦書き反転バグ回避）
+          for (const ch of p.label) {
+            const s = document.createElement("span");
+            s.textContent = ch;
+            lab.appendChild(s);
+          }
         } else {
           lab.textContent = p.label;
         }
