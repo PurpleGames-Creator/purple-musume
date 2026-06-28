@@ -957,16 +957,14 @@
       "父親": ["カゼひくなよ"],
       "母親": ["バカ言ってねェで早く出てけチクショー!!!（号泣）"],
     };
-    function speakFarewell(label) {
-      const lines = FAREWELL[label];
-      if (!lines || !lines.length) return;
+    function speakFarewell(label, text) {
       const p = pieces.find(x => x.label === label);
       if (!p) return;
       const el = pieceEls[p.id]; if (!el) return;
       const r = el.getBoundingClientRect();
       const b = document.createElement("div");
       b.className = "speech-float";
-      b.textContent = lines[Math.floor(Math.random() * lines.length)];
+      b.textContent = text;
       b.style.top = (r.top - 6) + "px";
       document.body.appendChild(b);
       // 横位置：パーツ中央。画面端でははみ出さないようクランプ
@@ -977,8 +975,14 @@
       setTimeout(() => b.remove(), 2200);
     }
     function showFarewell() {
-      speakFarewell("父親");
-      speakFarewell("母親");
+      // 全セリフ（話者ごと）を1つの候補プールにまとめ、その中から1つだけランダム表示
+      const pool = [];
+      for (const label in FAREWELL) {
+        for (const line of FAREWELL[label]) pool.push({ label, line });
+      }
+      if (!pool.length) return;
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      speakFarewell(pick.label, pick.line);
     }
 
     /* ---------- best (local) ---------- */
