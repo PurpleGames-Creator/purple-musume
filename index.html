@@ -384,7 +384,10 @@
     .rank-arrow { cursor: pointer; padding: 2px 12px; font-size: 17px; color: #a855f7; user-select: none; -webkit-tap-highlight-color: transparent; }
     .rank-arrow:active { color: #fff; }
     .rank-title { flex: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .rank-list { display: flex; flex-direction: column; gap: 5px; max-height: 210px; overflow-y: auto; padding-right: 2px; -webkit-overflow-scrolling: touch; }
+    /* 高さを固定し、件数（難易度/期間の切替）で枠が伸縮して画面が揺れるのを防ぐ */
+    .rank-list { display: flex; flex-direction: column; gap: 5px; height: 210px; overflow-y: auto; padding-right: 2px; -webkit-overflow-scrolling: touch; }
+    /* 空/読み込み時はメッセージを中央に配置（件数0でも高さは固定のまま） */
+    .rank-list:has(.rank-empty) { justify-content: center; align-items: center; }
     .rank-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; background: rgba(13,7,30,0.45); border-radius: 9px; padding: 7px 10px; }
     .rank-item.me { border: 1px solid rgba(168,130,255,0.6); background: rgba(60,34,118,0.4); }
     .rank-rank { min-width: 34px; font-weight: 800; color: #c4a0ff; text-align: center; }
